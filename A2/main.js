@@ -4,16 +4,14 @@ var gl;
 var program;
 
 var near = 0.1;
-var far = 10000;
-
-var isShoot = 0;
-
+var far = 8000;
 
 var left = -6.0;
 var right = 6.0;
 var ytop = 6.0;
 var bottom = -6.0;
 
+var delta = 165 / 60;
 
 var lightPosition2 = vec4(100.0, 100.0, 100.0, 1.0);
 var lightPosition = vec4(0.0, 0.0, 100.0, 1.0);
@@ -81,14 +79,6 @@ class Vector {
     }
 }
 
-class Particle {
-    constructor() {
-        this.pos = new Vector();
-        this.alpha = 1;
-    }
-}
-
-
 function isLoaded(im) {
     if (im.complete) {
         console.log("loaded");
@@ -142,6 +132,12 @@ function initTextures() {
 
     textureArray.push({});
     loadFileTexture(textureArray[textureArray.length - 1], "test.png");
+
+    textureArray.push({});
+    loadFileTexture(textureArray[textureArray.length - 1], "brick.png");
+
+    textureArray.push({});
+    loadFileTexture(textureArray[textureArray.length - 1], "orig.png");
 
     textureArray.push({});
     loadImageTexture(textureArray[textureArray.length - 1], image2);
@@ -304,8 +300,7 @@ window.onload = function init() {
 
     // Recursive wait for the textures to load
     waitForTextures(textureArray);
-    //setTimeout (render, 100) ;https://www.youtube.com/watch?v=1W_wqdkgb5I
-
+    //setTimeout (render, 100) ;
 }
 
 // Sets the modelview and normal matrix in the shaders
@@ -383,8 +378,11 @@ function gPush() {
 
 var currentTime = 0;
 var sceneNum = 0;
-var sceneLengths = [-1];
+var sceneLengths = [6, 11, 10.8, 6.1, -1];
 var timeDiff = 0;
+var sceneTime = 0;
+var frameRateTime = 0;
+var frameCount = 0;
 
 function render() {
 
@@ -425,18 +423,38 @@ function render() {
     currentTime += timeDiff;
     prevTime = curTime;
 
-    switch (sceneNum) {
-        case 0:
-            scene0(timeDiff);
-            break;
-        case 1:
-            break;
-        case 2:
-            break;
+    if (sceneLengths[sceneNum] <= sceneTime && sceneLengths[sceneNum] !== -1) {
+        sceneNum++;
+        sceneTime = 0;
     }
 
-    drawGround();
+    switch (sceneNum) {
+        case 0:
+            scene0(sceneTime);
+            break;
+        case 1:
+            scene1(sceneTime);
+            break;
+        case 2:
+            scene2(sceneTime);
+            break;
+        case 3:
+            scene3(sceneTime);
+            break;
+        case 4:
+            scene4(sceneTime);
+            break;
+    }
+    sceneTime += timeDiff;
+    frameRateTime += timeDiff;
+    drawBackground();
 
+    frameCount++;
+    if (frameRateTime >= 2.0) {
+        console.log("FPS: " + (frameCount / frameRateTime).toFixed(1));
+        frameRateTime = 0;
+        frameCount = 0;
+    }
     window.requestAnimFrame(render);
 }
 
@@ -448,13 +466,17 @@ var tank = {
     turretRotation: new Vector(),
     shotScale: 0,
     rotateSpeed: 300,
-    isRed: 1,
+    isRed: 0,
+    turretGunRotation: new Vector(),
 
     renderTank: function () {
 
         gPush();
         {
             gTranslate(this.position.x, this.position.y, this.position.z);
+            gRotate(this.rotation.x, 1, 0, 0);
+            gRotate(this.rotation.y, 0, 1, 0);
+            gRotate(this.rotation.z, 0, 0, 1);
 
             //Tank Body
             gPush();
@@ -486,7 +508,7 @@ var tank = {
                 gTranslate(0, 0.7, 0);
                 gPush();
                 {
-                    gScale(0.5, 0.5, 0.5);
+                    gScale(0.7, 0.6, 0.6);
                     drawCube();
                 }
                 gPop();
@@ -494,10 +516,188 @@ var tank = {
                 // Turret Cylinder
                 gPush();
                 {
-                    //gScale()
-                    gTranslate(0, 0.2, 1);
-                    gScale(0.5, 0.5, 3);
-                    drawCylinder();
+                    gRotate(this.turretGunRotation.x, 1, 0, 0);
+                    gRotate(this.turretGunRotation.y, 0, 1, 0);
+                    gRotate(this.turretGunRotation.z, 0, 0, 1);
+
+                    gPush();
+                    {
+                        gTranslate(0, 0.2, 1);
+                        gPush();
+                        {
+                            gScale(0.5, 0.5, 3);
+                            drawCylinder();
+                        }
+                        gPop();
+
+                        if (this.isShooting === 1) {
+                            gPush();
+                            {
+                                gTranslate(0.1, 0.1, 2);
+
+                                gScale(this.shotScale, this.shotScale, this.shotScale);
+                                setColor(vec4(1, 0, 0, 0));
+                                drawSphere();
+                            }
+                            gPop();
+
+                            if (this.shotScale > 1) {
+                                this.shotScale = 0;
+                                this.isShooting = 0;
+                            } else {
+                                this.shotScale += 0.05 * delta;
+                            }
+                        }
+                    }
+                    gPop();
+                }
+                gPop();
+            }
+            gPop();
+            toggleTextures();
+
+            // Tank Wheels
+            toggleTextures();
+            gPush();
+            {
+                gTranslate(1.1, -0.6, 0.7);
+                gRotate(TIME * this.rotateSpeed, 1, 0, 0);
+                gRotate(90, 0, 1, 0);
+                gScale(0.5, 0.5, 0.1);
+                setColor(vec4(0.5, 0.5, 0.5, 1.0));
+                drawCone()
+            }
+            gPop();
+            gPush();
+            {
+                gTranslate(1.1, -0.6, -0.7);
+                gRotate(TIME * this.rotateSpeed, 1, 0, 0);
+                gRotate(90, 0, 1, 0);
+                gScale(0.5, 0.5, 0.1);
+                setColor(vec4(0.5, 0.5, 0.5, 1.0));
+                drawCone()
+            }
+            gPop();
+            gPush();
+            {
+                gTranslate(-1.1, -0.6, 0.7);
+                gRotate(TIME * this.rotateSpeed, 1, 0, 0);
+                gRotate(90, 0, -1, 0);
+                gScale(0.5, 0.5, 0.1);
+                setColor(vec4(0.5, 0.5, 0.5, 1.0));
+                drawCone()
+            }
+            gPop();
+            gPush();
+            {
+                gTranslate(-1.1, -0.6, -0.7);
+                gRotate(TIME * this.rotateSpeed, 1, 0, 0);
+                gRotate(90, 0, -1, 0);
+                gScale(0.5, 0.5, 0.1);
+                setColor(vec4(0.5, 0.5, 0.5, 1.0));
+                drawCone()
+            }
+            gPop();
+            toggleTextures();
+        }
+        gPop();
+    },
+
+    shoot: function () {
+        this.isShooting = 1;
+    }
+};
+var tank1 = {
+
+    position: new Vector(),
+    rotation: new Vector(),
+    turretRotation: new Vector(),
+    shotScale: 0,
+    rotateSpeed: 300,
+    isRed: 1,
+    turretGunRotation: new Vector(),
+
+    renderTank: function () {
+
+        gPush();
+        {
+            gTranslate(this.position.x, this.position.y, this.position.z);
+            gRotate(this.rotation.x, 1, 0, 0);
+            gRotate(this.rotation.y, 0, 1, 0);
+            gRotate(this.rotation.z, 0, 0, 1);
+
+            //Tank Body
+            gPush();
+            {
+                if (this.isRed === 1) {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, textureArray[0].textureWebGL);
+                    gl.uniform1i(gl.getUniformLocation(program, "texture0"), 0);
+                } else {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, textureArray[1].textureWebGL);
+                    gl.uniform1i(gl.getUniformLocation(program, "texture1"), 1);
+                }
+
+                gScale(1.0, 0.5, 1.5);
+                drawCube();
+            }
+            gPop();
+
+            // Tank Turret
+            toggleTextures();
+            gPush();
+            {
+                setColor(vec4(0.5, 0.5, 0.5, 1));
+                gRotate(this.turretRotation.x, 1, 0, 0);
+                gRotate(this.turretRotation.y, 0, 1, 0);
+                gRotate(this.turretRotation.z, 0, 0, 1);
+
+                gTranslate(0, 0.7, 0);
+                gPush();
+                {
+                    gScale(0.7, 0.6, 0.6);
+                    drawCube();
+                }
+                gPop();
+
+                // Turret Cylinder
+                gPush();
+                {
+                    gRotate(this.turretGunRotation.x, 1, 0, 0);
+                    gRotate(this.turretGunRotation.y, 0, 1, 0);
+                    gRotate(this.turretGunRotation.z, 0, 0, 1);
+
+                    gPush();
+                    {
+                        gTranslate(0, 0.2, 1);
+                        gPush();
+                        {
+                            gScale(0.5, 0.5, 3);
+                            drawCylinder();
+                        }
+                        gPop();
+
+                        if (this.isShooting === 1) {
+                            gPush();
+                            {
+                                gTranslate(0.1, 0.1, 2);
+
+                                gScale(this.shotScale, this.shotScale, this.shotScale);
+                                setColor(vec4(1, 0, 0, 0));
+                                drawSphere();
+                            }
+                            gPop();
+
+                            if (this.shotScale > 1) {
+                                this.shotScale = 0;
+                                this.isShooting = 0;
+                            } else {
+                                this.shotScale += 0.05;
+                            }
+                        }
+                    }
+                    gPop();
                 }
                 gPop();
             }
@@ -550,11 +750,11 @@ var tank = {
         }
         gPop();
 
-        if (this.isShooting === 1) {
+        /*if (this.isShooting === 1) {
             toggleTextures();
             gPush();
             {
-                gTranslate(0, 0.9, 2.5);
+                gTranslate(this.position.x, this.position.y + 0.9, this.position.z + 2.5);
 
                 gScale(this.shotScale, this.shotScale, this.shotScale);
                 setColor(vec4(1, 0, 0, 0));
@@ -563,22 +763,44 @@ var tank = {
             gPop();
             toggleTextures();
 
-            if (this.shotScale > 2) {
+            if (this.shotScale > 1) {
                 this.shotScale = 0;
                 this.isShooting = 0;
             } else {
-                this.shotScale += 0.006;
+                this.shotScale += 0.05;
             }
 
-        }
+        }*/
     },
 
     shoot: function () {
-        //this.isShooting = 1;
+        this.isShooting = 1;
     }
 };
 
-function drawGround() {
+
+function drawBackground() {
+    gPush();
+    {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textureArray[4].textureWebGL);
+        gl.uniform1i(gl.getUniformLocation(program, "texture4"), 4);
+        gTranslate(0, -2, -100);
+        gScale(50, 1, 50);
+        drawCube();
+    }
+    gPop();
+    gPush();
+    {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textureArray[4].textureWebGL);
+        gl.uniform1i(gl.getUniformLocation(program, "texture4"), 4);
+        gTranslate(0, -2, 100);
+        gScale(50, 1, 50);
+        drawCube();
+    }
+    gPop();
+
     gPush();
     {
         gl.activeTexture(gl.TEXTURE0);
@@ -589,42 +811,274 @@ function drawGround() {
         drawCube();
     }
     gPop();
+
+    gPush();
+    {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textureArray[3].textureWebGL);
+        gl.uniform1i(gl.getUniformLocation(program, "texture3"), 3);
+
+        gTranslate(-2, 0, -20);
+        gScale(2, 10, 30);
+        drawCube();
+    }
+    gPop();
+
+    gPush();
+    {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textureArray[3].textureWebGL);
+        gl.uniform1i(gl.getUniformLocation(program, "texture3"), 3);
+
+        gTranslate(-19, 0, 11);
+        gScale(4, 5, 2);
+        drawCube();
+    }
+    gPop();
+
+    gPush();
+    {
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textureArray[3].textureWebGL);
+        gl.uniform1i(gl.getUniformLocation(program, "texture3"), 3);
+
+        gTranslate(-30, 0, -20);
+        gScale(4, 5, 2);
+        drawCube();
+    }
+    gPop();
 }
 
-function explodeParticles() {
-    particleArray = [];
-}
-
-function scene0(timeDiff) {
-    //console.log(currentTime);
-    if (currentTime === 0) {
+function scene0(sceneTime) {
+    if (sceneTime === 0) {
         // initial location placing
-        tank.shotScale = 0;
         tank.position.x = -8;
         tank.position.y = 0;
-        tank.position.z = 0;
-    } else {
-
-        at = vec3(-8, 0, 0);
-        //eye = vec3( Math.cos(timeDiff), -1, Math.sin(timeDiff));
-        //eye = vec3(0, 0, 0);
-        //at = vec3(at[0]+0.1,0,0)
-        //tank.shotScale += 0.001;
-        // increase shot scale until certain amount then go back to zero for another shot then repeat
-        //at[1] += 0.1;
-        //eye[1] += 0.001;
-        eye = vec3( -8 + (-5 * Math.cos(currentTime)), 8, (5*Math.sin(currentTime)));
-        //eye = vec3(1, 0, 0);
+        tank.position.z = -45;
+        at = vec3(tank.position.x, tank.position.y, tank.position.z);
+        eye = vec3(tank.position.x - 3, 1, tank.position.z + 1);
+        eye[2] = -50;
+    } else if (sceneTime <= 4) {
+        tank.position.z += 0.01 * delta;
+        at[2] += 0.01 * delta;
+        eye[1] += 0.0045 * delta;
+        eye[2] += 0.03 * delta;
+    } else if (sceneTime <= 6) {
+        tank.position.z += 0.01 * delta;
+        at[2] += 0.01 * delta;
+        eye[1] += 0.03 * delta;
+        eye[2] += 0.05 * delta;
     }
-    //eye[0] += 0.1;
 
-    if (currentTime > 3 && isShoot === 0) {
-        tank.shoot();
-        isShoot = 1;
-        console.log("Shoot");
+    tank.turretRotation.y = 20 * Math.cos(currentTime * 1.5);
+    tank.turretGunRotation.x = -5 + 5 * Math.cos(currentTime * 4);
+
+    tank.renderTank();
+}
+
+function scene1(sceneTime) {
+    if (sceneTime === 0) {
+        // initial location placing
+        tank1.position.x = -8;
+        tank1.position.y = 0;
+        tank1.position.z = 45;
+
+        tank1.rotation.y = 180;
+
+        at = vec3(tank1.position.x, tank1.position.y, tank1.position.z);
+        eye = vec3(tank1.position.x, 3, tank1.position.z);
+        eye[0] = -5;
+    } else if (sceneTime <= 6.5) {
+        at = vec3(tank1.position.x, tank1.position.y, tank1.position.z);
+        eye = vec3(tank1.position.x + 5 * Math.sin(sceneTime), eye[1], tank1.position.z + 5 * Math.cos(sceneTime));
+    } else if (sceneTime <= 11) {
+        at = vec3(tank1.position.x, tank1.position.y, tank1.position.z);
+        eye[1] += 0.0045 * delta;
+    }
+
+    tank1.position.z -= 0.01 * delta;
+    eye[2] -= 0.01 * delta;
+
+    tank1.turretRotation.y = 20 * Math.cos(currentTime * 1.5);
+    tank1.turretGunRotation.x = -5 + 5 * Math.cos(currentTime * 4);
+
+    tank.renderTank();
+    tank1.renderTank();
+}
+
+function scene2(sceneTime) {
+    if (sceneTime === 0) {
+        // initial location placing
+        at = vec3(tank.position.x, tank.position.y, tank.position.z);
+        eye = vec3(tank.position.x, 3, tank.position.z + 5);
+        tank.turretRotation.y = 0;
+        tank.turretGunRotation.x = 0;
+    } else if (sceneTime <= 2.5) {
+        tank.position.z += 0.02 * delta;
+        at[2] += 0.02 * delta;
+        eye[2] += 0.02 * delta;
+    } else if (sceneTime <= 7.7) {
+        tank.rotation.y -= 0.1 * delta;
+    } else if (sceneTime <= 10.8) {
+        tank.position.x -= 0.02 * delta;
     }
 
     tank.renderTank();
+    tank1.renderTank();
+}
+
+function scene3(sceneTime) {
+    if (sceneTime === 0) {
+        tank.position.x = -21;
+        tank.position.y = 0;
+        tank.position.z = -27;
+
+        tank1.position.x = -8;
+        tank1.position.y = 0;
+        tank1.position.z = 7;
+
+        tank.rotation.y = -90;
+
+        tank.rotateSpeed = 0;
+
+        at = vec3(tank.position.x, tank.position.y, tank.position.z);
+        eye = vec3(tank.position.x - 2, 4, tank.position.z - 4);
+    } else if (sceneTime <= 3) {
+        tank.turretRotation.y += 0.25 * delta;
+        tank1.position.z -= 0.015 * delta;
+    } else if (sceneTime <= 3.4) {
+        eye = vec3(tank.position.x + 2, 2, tank.position.z + 4);
+        tank.turretRotation.y += 0.3 * delta;
+    } else if (sceneTime > 3.4 && sceneTime < 3.5) {
+        tank.shoot();
+    } else if (sceneTime <= 4.4) {
+        tank.turretRotation.y -= 0.07 * delta;
+        tank.turretGunRotation.x -= 0.07 * delta;
+    } else if (sceneTime > 4.4 && sceneTime < 4.5) {
+        tank.shoot();
+    } else if (sceneTime <= 5.5) {
+        tank.turretRotation.y -= 0.07 * delta;
+    } else if (sceneTime <= 6.0) {
+        tank.turretGunRotation.x += 0.07 * delta;
+    } else if (sceneTime > 6 && sceneTime < 6.1) {
+        tank.shoot();
+    }
+    tank.renderTank();
+    tank1.renderTank();
+}
+
+function scene4(sceneTime) {
+    if (sceneTime === 0) {
+        at = vec3(tank1.position.x, tank1.position.y, tank1.position.z);
+        eye = vec3(tank.position.x - 2, 4, tank.position.z - 4);
+        tank1.turretRotation.x = 0;
+        tank1.turretRotation.y = 0;
+        tank1.turretRotation.z = 0;
+        tank1.rotateSpeed = 0;
+    } else if (sceneTime <= 1.0) {
+        at = vec3(tank1.position.x, 0, tank1.position.z);
+        eye[0] += 0.075 * delta;
+        eye[2] += 0.149 * delta;
+        eye[1] -= 0.02 * delta;
+    } else if (sceneTime <= 1.3) {
+        explosion((sceneTime - 1) * 2.5, tank1.position.x - 1, tank1.position.y, tank1.position.z - 1);
+    } else if (sceneTime <= 1.6) {
+        explosion((sceneTime - 1) * 2.5, tank1.position.x, tank1.position.y + 1, tank1.position.z - 1);
+    } else if (sceneTime <= 1.9) {
+        explosion((sceneTime - 1) * 2.5, tank1.position.x - 1, tank1.position.y, tank1.position.z + 1);
+    } else if (sceneTime <= 2.3) {
+        eye[1] += 0.05;
+    } else if (sceneTime <= 5.5) {
+        explosion((sceneTime - 2.3) * 1.5, tank1.position.x, tank1.position.y, tank1.position.z);
+        eye[0] -= 0.01 * delta;
+        eye[1] += 0.01 * delta;
+        eye[3] -= 0.01 * delta;
+    } else if (sceneTime > 5.5) {
+        tank1.position.y = -10;
+        brokenTank(tank1.position.x, tank1.position.y + 10, tank1.position.z)
+    }
+
+    tank.renderTank();
+    tank1.renderTank();
+}
+
+function explosion(scale, x, y, z) {
+    toggleTextures();
+    gPush();
+    {
+        gTranslate(x, y, z);
+
+        gScale(scale, scale, scale);
+        setColor(vec4(1, 0, 0, 0));
+        drawSphere();
+    }
+    gPop();
+    toggleTextures();
+}
+
+function brokenTank(x, y, z) {
+    toggleTextures();
+    gPush();
+    {
+        setColor(vec4(0.0, 0.0, 0.0, 1.0));
+        gTranslate(x - 1, y, z - 4);
+        gRotate(23, 1, 0, 1);
+        gScale(1.0, 0.5, 1.5);
+        drawCube();
+    }
+    gPop();
+    gPush();
+    {
+        setColor(vec4(0.0, 0.0, 0.0, 1.0));
+        gTranslate(x, y, z);
+        gPush();
+        {
+            gScale(0.5, 0.5, 3);
+            drawCylinder();
+        }
+        gPop();
+    }
+    gPop();
+
+    gPush();
+    {
+        gRotate(90, 1, 0, 0);
+        setColor(vec4(0.0, 0.0, 0.0, 1.0));
+        gPush();
+        {
+            gTranslate(x + 1.1, y + -0.6, z + 0.7);
+            gRotate(0, 0, 1, 0);
+            gScale(0.5, 0.5, 0.1);
+            drawCone()
+        }
+        gPop();
+        gPush();
+        {
+            gTranslate(x + 1.1, y + -0.6, z + -0.7);
+            gRotate(90, 0, 1, 0);
+            gScale(0.5, 0.5, 0.1);
+            drawCone()
+        }
+        gPop();
+        gPush();
+        {
+            gTranslate(x + -1.1, y + -0.6, z + 0.7);
+            gRotate(90, 0, -1, 0);
+            gScale(0.5, 0.5, 0.1);
+            drawCone()
+        }
+        gPop();
+        gPush();
+        {
+            gTranslate(x + -1.1, y + -0.6, z + -0.7);
+            gRotate(90, 0, -1, 0);
+            gScale(0.5, 0.5, 0.1);
+            drawCone()
+        }
+        gPop();
+    }
+    gPop();
+    toggleTextures();
 }
 
 

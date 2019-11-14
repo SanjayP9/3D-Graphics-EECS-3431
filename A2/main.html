@@ -60,6 +60,7 @@ main()
 	
 	fColorFromVer = vColor ;
 }
+
 </script>
 
 <script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
@@ -95,6 +96,7 @@ main()
     fragColor.a = 1.0 ;
 
 }
+
 </script>
 
 <script type="text/javascript" src="Common/webgl-utils.js"></script>
@@ -107,43 +109,48 @@ main()
 
 <body>
 <canvas id="gl-canvas" width="512" height="512">
-Oops ... your browser doesn't support the HTML5 canvas element
+    Oops ... your browser doesn't support the HTML5 canvas element
 </canvas>
 
 <br/>
 
 <div id="sliderX">
     X-Roll -180 <input id="sliderXi" type="range"
-    min="-180" max="180" step="2" value="0"
-    />
+                       min="-180" max="180" step="2" value="0"
+/>
     180
-</div><br/>
+</div>
+<br/>
 
 <div id="sliderY">
     Y-Roll -180 <input id="sliderYi" type="range"
-    min="-180" max="180" step="2" value="0"
-    />
+                       min="-180" max="180" step="2" value="0"
+/>
     180
-</div><br/>
+</div>
+<br/>
 
 <div id="sliderZ">
     Z-Roll -180 <input id="sliderZi" type="range"
-    min="-180" max="180" step="2" value="0"
-    />
+                       min="-180" max="180" step="2" value="0"
+/>
     180
-</div><br/>
+</div>
+<br/>
 
 <div id="animToggleButton">
     <input id="animToggleButtoni" type="button" value="Toggle Animation"
     />
 
-</div><br/>
+</div>
+<br/>
 
 <div id="textureToggleButton">
     <input id="textureToggleButtoni" type="button" value="Toggle Textures"
     />
-    
-</div><br/>
+
+</div>
+<br/>
 
 </body>
 </html>
