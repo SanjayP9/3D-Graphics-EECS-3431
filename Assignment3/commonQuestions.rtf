@@ -1,0 +1,27 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf600
+\cocoascreenfonts1{\fonttbl\f0\fswiss\fcharset0 ArialMT;\f1\fnil\fcharset0 LucidaGrande;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww19320\viewh13840\viewkind0
+\deftab720
+\pard\pardeftab720\sa280\partightenfactor0
+
+\f0\fs28 \cf0 Here are some tips and answers to common questions for programming assignment 3:
+\f1 \uc0\u8232 \u8232 
+\f0 (1) The char array that you will use for the final image takes r,g,b values from 0-255. that means you need to convert floating-point colors ranging from 0.0 to 1.0 into unsigned char values ranging from 0 to 255.
+\f1 \uc0\u8232 \u8232 
+\f0 (2) Make sure you are not dividing with integers and expecting floating-point values. If you use integers, it may use integer-division and cause things to become 0 when they should not be.
+\f1 \uc0\u8232 \u8232 
+\f0 (3) There is not one shadow ray per pixel. There is one shadow ray per light, per intersection point. The shadow ray is used to determine whether a light source contributes to the diffuse and specular parts of the illumination model. Note that if one light source does not contribute, other light sources may still contribute diffuse/specular illumination.
+\f1 \uc0\u8232 \u8232 
+\f0 (4) Your code is not going to work if you just program things without testing/debugging. You need to become comfortable with using cout/printf statements, AND the debugger, in order to inspect how your code is actually executing. Use the following process:
+\f1 \uc0\u8232 \u8232 
+\f0 (a) isolate the point in code where things go wrong.
+\f1 \uc0\u8232 
+\f0 (b) try to determine if it is a "careless mistake" or a "design problem"
+\f1 \uc0\u8232 
+\f0 (c) after that, its usually easy to fix things.
+\f1 \uc0\u8232 \u8232 \u8232 
+\f0 (5) You should ask yourself where the image plane (near plane) is located in 3D. This is determined by the data we provide in the test cases: left/right/top/bottom/near. That information, combined with the x resolution and y resolution, is enough to determine where any pixel is located in 3D. Once you know where the pixel is located in 3D, you know how to "generate a ray" that goes from the camera, through the pixel, into the world.
+\f1 \uc0\u8232 \u8232 \u8232 
+\f0 (6) "reflection" is a loaded word which is ambiguous. When describing concepts like diffuse and ambient illumination, it is reasonable to say that "some light is reflected, and other light is absorbed". HOWEVER, this does not mean you need to create/trace any actual reflected rays for ambient and diffuse. For specular, you will need to compute a reflected direction, but you will not need to "trace" that ray. For reflection, you will need to create and trace an actual reflected ray. finally, Note that the "specular" and "reflection" components may reflect different vectors for different purposes. You can see the illumination pdf to see exactly which vector is being reflected in specular.}

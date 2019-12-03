@@ -1,0 +1,5 @@
+﻿H:\VS17\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(452,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (Assignment3.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+  raytracer.cpp
+G:\GitKrakenRepos\eecs3431\A3\Assignment3\raytracer.cpp(197,13): warning C4129:  'P': unrecognized character escape sequence
+G:\GitKrakenRepos\eecs3431\A3\Assignment3\raytracer.cpp(197,13): warning C4129: G:\GitKrakenRepos\eecs3431\A3\Assignment3\raytracer.cpp(54) : error C4716: 'split': must return a value
+H:\VS17\MSBuild\Microsoft\VC\v160\Microsoft.CppCommon.targets(429,5): error MSB6006: "CL.exe" exited with code 2.
